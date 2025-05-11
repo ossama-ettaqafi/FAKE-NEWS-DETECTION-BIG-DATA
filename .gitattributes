@@ -1,3 +1,7 @@
 data/final_fake_real_news.tsv filter=lfs diff=lfs merge=lfs -text
 models/tfidf_vectorizer.pkl filter=lfs diff=lfs merge=lfs -text
 zookeeper-data/version-2/log.1 filter=lfs diff=lfs merge=lfs -text
+*.pkl filter=lfs diff=lfs merge=lfs -text
+*.h5 filter=lfs diff=lfs merge=lfs -text
+*.pt filter=lfs diff=lfs merge=lfs -text
+models/*.pkl filter=lfs diff=lfs merge=lfs -text
