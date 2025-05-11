@@ -1,8 +1,0 @@
-cd C:\kafka_2.12-2.5.0
-
-.\bin\windows\zookeeper-server-start.bat .\config\zookeeper.properties
- .\bin\windows\kafka-server-start.bat .\config\server.properties
-
- .\bin\windows\kafka-topics.bat --bootstrap-server localhost:9092 --list
-
- .\bin\windows\kafka-topics.bat --create --topic news-topic --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Fake News Dashboard</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static/css', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -11,94 +11,100 @@
 <h1>📰 Fake News Detection Dashboard</h1>
 
 <div class="cards">
-    <div class="card card-blue">
-        <h2>Total Predictions</h2>
-        <p>{{ total_predictions }}</p>
-    </div>
-    <div class="card card-green">
-        <h2>Correct Predictions</h2>
-        <p>{{ correct_predictions }}</p>
-    </div>
-    <div class="card card-orange">
-        <h2>Global Accuracy</h2>
-        <p>{{ global_accuracy }}%</p>
-    </div>
-    <div class="card card-purple">
-        <h2>Real vs Fake</h2>
-        <p>Real: {{ real_count }} | Fake: {{ fake_count }}</p>
-    </div>
+    <div class="card card-blue"><h2>Total Predictions</h2><p>{{ total_predictions }}</p></div>
+    <div class="card card-green"><h2>Correct Predictions</h2><p>{{ correct_predictions }}</p></div>
+    <div class="card card-orange"><h2>Global Accuracy</h2><p>{{ global_accuracy }}%</p></div>
+    <div class="card card-purple"><h2>Real vs Fake</h2><p>Real: {{ real_count }} | Fake: {{ fake_count }}</p></div>
 </div>
 
 <h2>📊 Evaluation Metrics per Batch</h2>
+<table>
+    <thead><tr><th>Batch ID</th><th>Model</th><th>Timestamp</th><th>Accuracy</th><th>Precision</th><th>Recall</th><th>F1-Score</th></tr></thead>
+    <tbody>{% for row in metrics %}
+    <tr><td>{{ row.batch_id }}</td><td>{{ row.model }}</td><td>{{ row.timestamp }}</td><td>{{ row.accuracy }}</td><td>{{ row.precision }}</td><td>{{ row.recall }}</td><td>{{ row.f1_score }}</td></tr>
+    {% endfor %}</tbody>
+</table>
 
+<h2>📌 Per-Model Global Stats</h2>
 <table>
     <thead>
         <tr>
-            <th>Batch ID</th>
-            <th>Timestamp</th>
-            <th>Accuracy</th>
-            <th>Precision</th>
-            <th>Recall</th>
-            <th>F1-Score</th>
+            <th>Model</th>
+            <th>Total</th>
+            <th>Correct</th>
+            <th>Accuracy (%)</th>
         </tr>
     </thead>
     <tbody>
-        {% for row in metrics %}
+        {% for m in model_stats %}
         <tr>
-            <td>{{ row.batch_id }}</td>
-            <td>{{ row.timestamp }}</td>
-            <td>{{ row.accuracy }}</td>
-            <td>{{ row.precision }}</td>
-            <td>{{ row.recall }}</td>
-            <td>{{ row.f1_score }}</td>
+            <td>{{ m.model }}</td>
+            <td>{{ m.total }}</td>
+            <td>{{ m.correct }}</td>
+            <td>{{ m.accuracy }}</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 
-<h2>🧮 Real vs Fake Distribution</h2>
+<h2>📈 Accuracy by Model</h2>
+<div class="chart-container"><canvas id="accuracyChart"></canvas></div>
 
-<div class="chart-container">
-    <canvas id="distributionChart"></canvas>
-</div>
+<h2>🧮 Real vs Fake Distribution</h2>
+<div class="chart-container"><canvas id="distributionChart"></canvas></div>
 
 <h2>📝 Try a News Prediction</h2>
+<form method="POST" class="predict-form">
+    <textarea name="news_text" rows="4" cols="80" placeholder="Enter news here...">{{ user_text }}</textarea>
 
-<form method="POST">
-    <textarea name="news_text" rows="4" cols="80" placeholder="Enter news here...">{{ user_text }}</textarea><br>
+    <div class="model-select-container">
+        <label for="model_choice">Select Model:</label>
+        <select name="model_choice" id="model_choice">
+            <option value="naive_bayes" {% if model_used == "Naive Bayes" %}selected{% endif %}>Naive Bayes</option>
+            <option value="svm" {% if model_used == "SVM" %}selected{% endif %}>SVM</option>
+        </select>
+    </div>
+
     <button type="submit">Predict</button>
 </form>
 
+
 {% if new_prediction %}
-    <h3>Prediction: <span class="prediction">{{ new_prediction }}</span></h3>
+    <h3>Prediction using <strong>{{ model_used }}</strong>: <span class="prediction">{{ new_prediction }}</span></h3>
 {% endif %}
 
 <script>
-    const ctx = document.getElementById('distributionChart').getContext('2d');
-    new Chart(ctx, {
+    new Chart(document.getElementById('accuracyChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+            labels: [{% for m in model_stats %}'{{ m.model }}'{% if not loop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Accuracy %',
+                data: [{% for m in model_stats %}{{ m.accuracy }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: '#3498db'
+            }]
+        },
+        options: {
+            indexAxis: 'x',
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, max: 100 } }
+        }
+    });
+
+    new Chart(document.getElementById('distributionChart').getContext('2d'), {
         type: 'bar',
         data: {
             labels: ['Real News', 'Fake News'],
             datasets: [{
                 label: 'Distribution',
                 data: [{{ real_count }}, {{ fake_count }}],
-                backgroundColor: ['#2ecc71', '#e74c3c'],
-                borderWidth: 1
+                backgroundColor: ['#2ecc71', '#e74c3c']
             }]
         },
         options: {
-            indexAxis: 'y', // ➔ barres horizontales
-            responsive: true,
-            scales: {
-                x: {
-                    beginAtZero: true
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                }
-            }
+            indexAxis: 'y',
+            plugins: { legend: { display: false } },
+            scales: { x: { beginAtZero: true } }
         }
     });
 </script>
