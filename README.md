@@ -1,137 +1,184 @@
-# 🧠 Fake News Detection - Big Data Platform
+# 📰 Fake News Detection — Big Data Pipeline
 
-## 📘 Contexte du projet
+A real-time pipeline for detecting fake news using Apache Kafka, Spark, Cassandra, and a Flask-based dashboard. The system streams articles, applies pre-trained ML models for classification, and stores results for visualization.
 
-Ce projet a été développé dans le cadre d’un module de **Big Data & Intelligence Artificielle**.
-Il s'agit d'une **plateforme de détection de fausses informations** en temps réel, exploitant un flux Kafka, des modèles d’apprentissage automatique, une base de données NoSQL (Cassandra) et un tableau de bord interactif (Flask).
-
-Notre objectif : créer un **système complet de bout en bout**, de l’ingestion de données à la visualisation des prédictions.
-
-## 🎯 Objectifs
-
-* 🔁 Traiter des données de news en **streaming temps réel** via Kafka.
-* 🧠 Utiliser des modèles **Naive Bayes & SVM** pour prédire les fausses informations.
-* 🗃️ Sauvegarder les résultats dans **Cassandra**.
-* 📊 Visualiser les métriques dans un **dashboard Flask interactif**.
-* ✅ Fournir une **solution complète, modulaire et maintenable**.
-
-## ⚙️ Architecture & Technologies
-
-| Composant            | Technologie utilisée                    |
-|----------------------|------------------------------------------|
-| Data Streaming       | Apache **Kafka**                         |
-| Prétraitement & ML   | Python · Pandas · Scikit-learn           |
-| Modèles utilisés     | Naive Bayes · SVM                        |
-| Base de données      | **Apache Cassandra** (NoSQL)             |
-| Frontend Dashboard   | **Flask** + HTML/CSS                     |
-| Déploiement          | Localhost (ou Docker)                    |
-| Entraînement modèles | `models/notebooks/FakeNewsDetection_ML.ipynb`  |
-
-## 🧱 Structure du projet
+## 📁 Project Structure
 
 ```
+
 FakeNewsDetectionBigData/
-├── config/
-│   └── settings.py
-│
-├── producer.py
-├── consumer.py
-├── dashboard.py
-│
-├── models/
-│   ├── naive_bayes_model.pkl
-│   ├── svm_model.pkl
-│   └── tfidf_vectorizer.pkl
-│
-├── templates/
-│   └── dashboard.html
-│
-├── data/
-│   └── final_fake_real_news.tsv
-│
-├── notebooks/
-│   └── FakeNewsDetection_ML.ipynb
-│
-├── scripts/
-│   └── run_all.bat
-│
-├── requirements.txt
+├── producer.py                 # Kafka producer: streams dataset to topic
+├── consumer.py                 # Spark job: consumes, predicts, stores to Cassandra
+├── dashboard.py                # Flask dashboard for live prediction view
+├── models/                     # Pretrained models (Naive Bayes, SVM, TF-IDF)
+├── data/                       # Streaming dataset (.tsv)
+├── config/                     # Contains settings.py (Kafka config, paths)
+├── templates/                  # HTML template for dashboard
+├── notebooks/                  # Jupyter notebook for training
+│   └── FakeNewsDetection\_ML.ipynb
+├── scripts/                    # Batch launcher
+│   └── run\_all.bat
+├── requirements.txt            # Python dependencies
 └── README.md
-```
 
-## 🚀 Lancement de la plateforme
+````
 
-### ⚙️ Prérequis
+## ⚙ Technologies Used
 
-* Python 3.7+
-* Kafka & Zookeeper configurés
-* Cassandra installé et opérationnel
-* Packages : voir `requirements.txt`
+| Component          | Tool / Library                      |
+|--------------------|-------------------------------------|
+| Data Streaming     | Apache Kafka                        |
+| Stream Processing  | Apache Spark                        |
+| Machine Learning   | Python, Scikit-learn                |
+| Models             | Naive Bayes, SVM (TF-IDF features)  |
+| Storage            | Apache Cassandra (NoSQL)            |
+| Dashboard          | Flask + HTML                        |
+| Dataset            | TSV format with `text` and `label`  |
 
-### 🧪 Installation & Exécution
+---
+
+## 🚀 How to Run the Pipeline
+
+### Option 1: Use the automated script
+
+From the root of the project, run:
 
 ```bash
-# Créer un environnement virtuel
-python -m venv venv
-venv\Scripts\activate   # (Windows)
-
-# Installer les dépendances
-pip install -r requirements.txt
-
-# Lancer Kafka + Cassandra (si non déjà lancés)
-
-# Lancer tous les scripts automatiquement
 scripts\run_all.bat
+````
+
+This script will:
+
+1. Start Zookeeper
+2. Start Kafka
+3. Create the Kafka topic `news`
+4. Start the Kafka producer
+5. Start the Spark consumer
+6. Launch the Flask dashboard
+
+Each step includes delays to ensure services initialize properly.
+
+### Option 2: Manual Startup (Step-by-step)
+
+#### 1. Start Zookeeper
+
+```bash
+D:\kafka_2.12-2.5.0\bin\windows\zookeeper-server-start.bat D:\kafka_2.12-2.5.0\config\zookeeper.properties
 ```
 
-> 📌 Vous pouvez aussi exécuter chaque script individuellement selon votre architecture.
+#### 2. Start Kafka
 
-## 🖥️ Dashboard Web
+```bash
+D:\kafka_2.12-2.5.0\bin\windows\kafka-server-start.bat D:\kafka_2.12-2.5.0\config\server.properties
+```
 
-Une fois le script `dashboard.py` lancé :
+#### 3. Create the Kafka topic
 
-🔗 Accès : [http://127.0.0.1:5000](http://127.0.0.1:5000)
+```bash
+D:\kafka_2.12-2.5.0\bin\windows\kafka-topics.bat --create ^
+  --topic news ^
+  --bootstrap-server localhost:9092 ^
+  --partitions 1 ^
+  --replication-factor 1
+```
 
-Fonctionnalités :
+#### 4. Start the Kafka producer
 
-* 🎯 Prédiction en ligne de texte
-* 📊 Affichage de l’accuracy globale et par modèle
-* 🧠 Statistiques sur les performances du classifieur
+```bash
+python producer.py
+```
 
-## 📑 Dataset utilisé
+#### 5. Start the Spark consumer
 
-Fichier : `data/final_fake_real_news.tsv`
-Format : TSV avec colonnes `text` et `label`
+```bash
+set PYSPARK_PYTHON=python
+spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0,com.datastax.spark:spark-cassandra-connector_2.12:3.4.1 consumer.py
+```
 
-* `0` → Real news
-* `1` → Fake news
+#### 6. Start the Flask dashboard
 
-## 🔐 Sécurité & Fiabilité
+```bash
+python dashboard.py
+```
 
-* 🔒 Les données sensibles sont configurées dans `config/settings.py`
-* 📈 Le pipeline Kafka est résilient aux erreurs
-* 🧪 Les prédictions sont validées avant insertion
+## 🧪 Model Training
 
-## 📄 Documentation complémentaire
+* Training is done in `notebooks/FakeNewsDetection_ML.ipynb`
+* Models are saved as `.pkl` files in the `models/` directory
+* Used classifiers: Naive Bayes and SVM with TF-IDF vectorization
 
-* **📥 `producer.py`**: Publishes news data from `final_fake_real_news.tsv` into Kafka topic `news`
+## 🗃 Cassandra Setup
 
-* **📤 `spark_consumer.py`**:
+Launch `cqlsh` and run:
 
-  * Listens to Kafka topic
-  * Cleans text
-  * Uses pre-trained `Naive Bayes` and `SVM` models to predict
-  * Evaluates predictions
-  * Stores both predictions and evaluation metrics into Cassandra
+```sql
+CREATE KEYSPACE IF NOT EXISTS fakenews
+WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1};
 
-* **📊 `dashboard.py`**: Reads Cassandra and visualizes metrics/results
+USE fakenews;
 
-## 👨‍💻 Réalisé par
+CREATE TABLE IF NOT EXISTS predictions_streaming (
+    id UUID PRIMARY KEY,
+    text_short TEXT,
+    label INT,
+    prediction DOUBLE,
+    model TEXT
+);
 
-**ENIHE Nouhaila**, **OUAHMIDI Lamya** & **Ossama ETTAQAFI (me)**
-Étudiants en Master Data Science & IA
-Université ENSAJ
+CREATE TABLE IF NOT EXISTS evaluation_streaming (
+    batch_id BIGINT,
+    model TEXT,
+    timestamp TEXT,
+    accuracy DOUBLE,
+    precision DOUBLE,
+    recall DOUBLE,
+    f1_score DOUBLE,
+    PRIMARY KEY (batch_id, model)
+);
+```
 
-## 📜 Licence
+## 🔧 Configuration
 
-Ce projet est open source sous la licence MIT.
+Edit `config/settings.py` to change:
+
+```python
+# Kafka Configuration
+KAFKA_CONFIG = {
+    'KAFKA_BROKER': 'localhost:9092',
+    'KAFKA_TOPIC': 'news'
+}
+
+# File path for data
+DATA_FILE_PATH = 'data/final_fake_real_news.tsv'
+
+# Model file paths
+MODEL_PATHS = {
+    'tfidf': 'models/tfidf_vectorizer.pkl',
+    'naive_bayes': 'models/naive_bayes_model.pkl',
+    'svm': 'models/svm_model.pkl'
+}
+
+# Cassandra configuration
+CASSANDRA_CONFIG = {
+    'host': '127.0.0.1',
+    'keyspace': 'fakenews'
+}
+```
+
+## 📋 Requirements
+
+Install required packages:
+
+```bash
+pip install -r requirements.txt
+```
+
+## 📌 Notes
+
+* Kafka 2.5.0, Spark 3.4.x, Cassandra 3.11.x recommended
+* Cassandra `cqlsh` may require Python 2.7
+* Kafka/Zookeeper logs and metadata may live under `C:\tmp\` unless redirected
+
+## 📄 License
+
+MIT License
