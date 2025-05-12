@@ -17,15 +17,15 @@ Notre objectif : créer un **système complet de bout en bout**, de l’ingestio
 
 ## ⚙️ Architecture & Technologies
 
-| Composant            | Technologie utilisée           |
-| -------------------- | ------------------------------ |
-| Data Streaming       | Apache **Kafka**               |
-| Prétraitement & ML   | Python · Pandas · Scikit-learn |
-| Modèles utilisés     | Naive Bayes · SVM              |
-| Base de données      | **Apache Cassandra** (NoSQL)   |
-| Frontend Dashboard   | **Flask** + HTML/CSS           |
-| Déploiement          | Localhost (ou Docker)          |
-| Entraînement modèles | `models/train_models.py`       |
+| Composant            | Technologie utilisée                    |
+|----------------------|------------------------------------------|
+| Data Streaming       | Apache **Kafka**                         |
+| Prétraitement & ML   | Python · Pandas · Scikit-learn           |
+| Modèles utilisés     | Naive Bayes · SVM                        |
+| Base de données      | **Apache Cassandra** (NoSQL)             |
+| Frontend Dashboard   | **Flask** + HTML/CSS                     |
+| Déploiement          | Localhost (ou Docker)                    |
+| Entraînement modèles | `models/notebooks/FakeNewsDetection_ML.ipynb`  |
 
 ## 🧱 Structure du projet
 
@@ -33,21 +33,28 @@ Notre objectif : créer un **système complet de bout en bout**, de l’ingestio
 FakeNewsDetectionBigData/
 ├── config/
 │   └── settings.py
+│
 ├── producer.py
 ├── consumer.py
-├── evaluation.py
 ├── dashboard.py
+│
 ├── models/
-│   ├── train_models.py
 │   ├── naive_bayes_model.pkl
 │   ├── svm_model.pkl
 │   └── tfidf_vectorizer.pkl
+│
 ├── templates/
 │   └── dashboard.html
+│
 ├── data/
 │   └── final_fake_real_news.tsv
+│
+├── notebooks/
+│   └── FakeNewsDetection_ML.ipynb
+│
 ├── scripts/
 │   └── run_all.bat
+│
 ├── requirements.txt
 └── README.md
 ```
