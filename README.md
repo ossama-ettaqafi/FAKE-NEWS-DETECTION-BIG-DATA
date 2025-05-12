@@ -1,21 +1,11 @@
 # 🧠 Fake News Detection - Big Data Platform
 
-<div align="center">
-  <img src="https://i.ibb.co/FxrMqr7/fake-news-icon.png" alt="Fake News Icon" height="100px"/>
-  <br>
-  <strong>Streaming & Classifying News Articles with Big Data Tools</strong>
-</div>
-
----
-
 ## 📘 Contexte du projet
 
 Ce projet a été développé dans le cadre d’un module de **Big Data & Intelligence Artificielle**.
 Il s'agit d'une **plateforme de détection de fausses informations** en temps réel, exploitant un flux Kafka, des modèles d’apprentissage automatique, une base de données NoSQL (Cassandra) et un tableau de bord interactif (Flask).
 
 Notre objectif : créer un **système complet de bout en bout**, de l’ingestion de données à la visualisation des prédictions.
-
----
 
 ## 🎯 Objectifs
 
@@ -25,21 +15,17 @@ Notre objectif : créer un **système complet de bout en bout**, de l’ingestio
 * 📊 Visualiser les métriques dans un **dashboard Flask interactif**.
 * ✅ Fournir une **solution complète, modulaire et maintenable**.
 
----
-
 ## ⚙️ Architecture & Technologies
 
-| Composant            | Technologie utilisée           |
-| -------------------- | ------------------------------ |
-| Data Streaming       | Apache **Kafka**               |
-| Prétraitement & ML   | Python · Pandas · Scikit-learn |
-| Modèles utilisés     | Naive Bayes · SVM              |
-| Base de données      | **Apache Cassandra** (NoSQL)   |
-| Frontend Dashboard   | **Flask** + HTML/CSS           |
-| Déploiement          | Localhost (ou Docker)          |
-| Entraînement modèles | `models/train_models.py`       |
-
----
+| Composant            | Technologie utilisée                    |
+|----------------------|------------------------------------------|
+| Data Streaming       | Apache **Kafka**                         |
+| Prétraitement & ML   | Python · Pandas · Scikit-learn           |
+| Modèles utilisés     | Naive Bayes · SVM                        |
+| Base de données      | **Apache Cassandra** (NoSQL)             |
+| Frontend Dashboard   | **Flask** + HTML/CSS                     |
+| Déploiement          | Localhost (ou Docker)                    |
+| Entraînement modèles | `models/notebooks/FakeNewsDetection_ML.ipynb`  |
 
 ## 🧱 Structure du projet
 
@@ -47,26 +33,31 @@ Notre objectif : créer un **système complet de bout en bout**, de l’ingestio
 FakeNewsDetectionBigData/
 ├── config/
 │   └── settings.py
+│
 ├── producer.py
 ├── consumer.py
-├── evaluation.py
 ├── dashboard.py
+│
 ├── models/
-│   ├── train_models.py
 │   ├── naive_bayes_model.pkl
 │   ├── svm_model.pkl
 │   └── tfidf_vectorizer.pkl
+│
 ├── templates/
 │   └── dashboard.html
+│
 ├── data/
 │   └── final_fake_real_news.tsv
+│
+├── notebooks/
+│   └── FakeNewsDetection_ML.ipynb
+│
 ├── scripts/
 │   └── run_all.bat
+│
 ├── requirements.txt
 └── README.md
 ```
-
----
 
 ## 🚀 Lancement de la plateforme
 
@@ -95,8 +86,6 @@ scripts\run_all.bat
 
 > 📌 Vous pouvez aussi exécuter chaque script individuellement selon votre architecture.
 
----
-
 ## 🖥️ Dashboard Web
 
 Une fois le script `dashboard.py` lancé :
@@ -109,8 +98,6 @@ Fonctionnalités :
 * 📊 Affichage de l’accuracy globale et par modèle
 * 🧠 Statistiques sur les performances du classifieur
 
----
-
 ## 📑 Dataset utilisé
 
 Fichier : `data/final_fake_real_news.tsv`
@@ -119,32 +106,31 @@ Format : TSV avec colonnes `text` et `label`
 * `0` → Real news
 * `1` → Fake news
 
----
-
 ## 🔐 Sécurité & Fiabilité
 
 * 🔒 Les données sensibles sont configurées dans `config/settings.py`
 * 📈 Le pipeline Kafka est résilient aux erreurs
 * 🧪 Les prédictions sont validées avant insertion
 
----
-
 ## 📄 Documentation complémentaire
 
-* 🛠 `train_models.py` : script d'entraînement des modèles
-* 🗃 `evaluation.py` : calcule et stocke les métriques dans Cassandra
-* 📥 `producer.py` : lit le dataset et publie dans Kafka
-* 📤 `consumer.py` : reçoit les données, prédit, stocke
+* **📥 `producer.py`**: Publishes news data from `final_fake_real_news.tsv` into Kafka topic `news`
 
----
+* **📤 `spark_consumer.py`**:
+
+  * Listens to Kafka topic
+  * Cleans text
+  * Uses pre-trained `Naive Bayes` and `SVM` models to predict
+  * Evaluates predictions
+  * Stores both predictions and evaluation metrics into Cassandra
+
+* **📊 `dashboard.py`**: Reads Cassandra and visualizes metrics/results
 
 ## 👨‍💻 Réalisé par
 
 **ENIHE Nouhaila**, **OUAHMIDI Lamya** & **Ossama ETTAQAFI (me)**
 Étudiants en Master Data Science & IA
 Université ENSAJ
-
----
 
 ## 📜 Licence
 
