@@ -4,24 +4,23 @@ import pandas as pd
 from kafka import KafkaProducer
 import time
 import json
-from config.settings import KAFKA_CONFIG, DATA_FILE_PATH
 
-# Kafka Producer Configuration
+# Import configuration from settings.py
+from config.settings import KAFKA_BROKER, KAFKA_TOPIC, DATA_FILE_PATH
+
+# Initialize Kafka Producer
 producer = KafkaProducer(
-    bootstrap_servers=KAFKA_CONFIG['KAFKA_BROKER'],
+    bootstrap_servers=KAFKA_BROKER,
     value_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
-topic = KAFKA_CONFIG['KAFKA_TOPIC']
-file_path = DATA_FILE_PATH
-
-# Function to send a chunk to Kafka
+# Function to send each row to Kafka
 def send_to_kafka(chunk):
     for _, row in chunk.iterrows():
         try:
             if pd.notna(row['text']) and pd.notna(row['label']):
                 message = {'text': row['text'], 'label': row['label']}
-                producer.send(topic, value=message)
+                producer.send(KAFKA_TOPIC, value=message)
                 print("Sent:", message)
                 time.sleep(0.1)
             else:
@@ -29,9 +28,10 @@ def send_to_kafka(chunk):
         except Exception as e:
             print("Error sending row:", e)
 
+# Main routine
 try:
-    # Read and shuffle the dataset
-    data = pd.read_csv(file_path, sep='\t')
+    # Load and shuffle the data
+    data = pd.read_csv(DATA_FILE_PATH, sep='\t')
     data = data.sample(frac=1).reset_index(drop=True)
 
     # Send in chunks
@@ -44,6 +44,6 @@ try:
 except Exception as e:
     print("Error reading the file:", e)
 
-# Flush and close producer
+# Ensure all messages are sent
 producer.flush()
 producer.close()

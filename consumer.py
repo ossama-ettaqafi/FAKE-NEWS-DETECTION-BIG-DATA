@@ -9,7 +9,15 @@ from datetime import datetime
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
 # Import settings
-from config.settings import KAFKA_BROKER, KAFKA_TOPIC, CASSANDRA_HOST, CASSANDRA_KEYSPACE, CASSANDRA_PREDICTIONS_TABLE, CASSANDRA_EVALUATION_TABLE, MODELS_DIR
+from config.settings import (
+    KAFKA_BROKER,
+    KAFKA_TOPIC,
+    CASSANDRA_HOST,
+    CASSANDRA_KEYSPACE,
+    CASSANDRA_PREDICTIONS_TABLE,
+    CASSANDRA_EVALUATION_TABLE,
+    MODELS_DIR
+)
 
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import col, from_json, lower, regexp_replace, length
@@ -22,7 +30,7 @@ from nltk.stem import WordNetLemmatizer
 import re
 import string
 
-# === Chargement des modèles ===
+# === Load models ===
 tfidf = joblib.load(f"{MODELS_DIR}/tfidf_vectorizer.pkl")
 nb_model = joblib.load(f"{MODELS_DIR}/naive_bayes_model.pkl")
 svm_model = joblib.load(f"{MODELS_DIR}/svm_model.pkl")
@@ -33,19 +41,19 @@ spark = SparkSession.builder \
     .master("local[*]") \
     .config("spark.jars.packages", ",".join([
         "org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0",
-        "com.datastax.spark:spark-cassandra-connector_2.12:3.4.0"
+        "com.datastax.spark:spark-cassandra-connector_2.12:3.4.1"
     ])) \
     .config("spark.cassandra.connection.host", CASSANDRA_HOST) \
     .getOrCreate()
 
 spark.sparkContext.setLogLevel("WARN")
 
-# === Schéma Kafka attendu ===
+# === Kafka message schema ===
 schema = StructType() \
     .add("text", StringType()) \
     .add("label", IntegerType())
 
-# === Lecture depuis Kafka ===
+# === Kafka streaming input ===
 df = spark.readStream \
     .format("kafka") \
     .option("kafka.bootstrap.servers", KAFKA_BROKER) \
@@ -57,7 +65,7 @@ json_df = df.selectExpr("CAST(value AS STRING) as json") \
     .select(from_json(col("json"), schema).alias("data")) \
     .select("data.*")
 
-# === Nettoyage texte ===
+# === Text cleaning ===
 clean_df = json_df.withColumn("text", lower(col("text")))
 clean_df = clean_df.withColumn("text", regexp_replace(col("text"), "[^a-zA-Z\\s]", " "))
 clean_df = clean_df.withColumn("text", regexp_replace(col("text"), "\\s+", " "))
@@ -70,6 +78,7 @@ clean_df = clean_df.filter(
     (col("label").isNotNull())
 )
 
+# NLP Preprocessing
 stop_words = set(stopwords.words('english'))
 lemmatizer = WordNetLemmatizer()
 
@@ -83,22 +92,21 @@ def preprocess_text(text):
     tokens = [lemmatizer.lemmatize(t) for t in tokens]
     return ' '.join(tokens)
 
-# === Traitement d’un batch ===
+# === Batch processing ===
 def process_batch(batch_df, batch_id):
     rows = batch_df.select("text", "label").collect()
     if not rows:
-        print(f"[Batch {batch_id}] Aucun texte reçu.")
+        print(f"[Batch {batch_id}] No data received.")
         return
 
     texts = [preprocess_text(row["text"]) for row in rows]
     labels = [row["label"] for row in rows]
-    print(f"\n=== Batch {batch_id} | {len(texts)} textes ===")
+    print(f"\n=== Batch {batch_id} | {len(texts)} texts ===")
 
     X_vec = tfidf.transform(texts)
     preds_nb = nb_model.predict(X_vec)
     preds_svm = svm_model.predict(X_vec)
 
-    # === Prédictions
     predictions = []
     pred_console = []
     for i in range(len(texts)):
@@ -118,7 +126,7 @@ def process_batch(batch_df, batch_id):
                 result
             ])
 
-    print("\n=== Prédictions ===")
+    print("\n=== Predictions ===")
     for row in pred_console[:10]:
         print(f"{row[0]:<12} | {row[1]:<60} | {row[2]:<6} | {row[3]}")
 
@@ -132,7 +140,7 @@ def process_batch(batch_df, batch_id):
         .options(table=CASSANDRA_PREDICTIONS_TABLE, keyspace=CASSANDRA_KEYSPACE) \
         .save()
 
-    # === Évaluation
+    # === Evaluation ===
     from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
     metrics = []
     table = []
@@ -155,7 +163,7 @@ def process_batch(batch_df, batch_id):
 
         table.append([model_name, acc, prec, rec, f1])
 
-    print(f"\n=== Évaluation du Batch {batch_id} ===")
+    print(f"\n=== Batch {batch_id} Evaluation ===")
     print(tabulate(table, headers=["Model", "Accuracy", "Precision", "Recall", "F1-score"], tablefmt="simple"))
 
     metrics_df = spark.createDataFrame(metrics) \
@@ -170,7 +178,7 @@ def process_batch(batch_df, batch_id):
         .options(table=CASSANDRA_EVALUATION_TABLE, keyspace=CASSANDRA_KEYSPACE) \
         .save()
 
-# === Démarrage du stream
+# === Start stream ===
 query = clean_df.writeStream \
     .foreachBatch(process_batch) \
     .outputMode("append") \
