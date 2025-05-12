@@ -1,11 +1,5 @@
 # 🧠 Fake News Detection - Big Data Platform
 
-<div align="center">
-  <img src="https://i.ibb.co/FxrMqr7/fake-news-icon.png" alt="Fake News Icon" height="100px"/>
-  <br>
-  <strong>Streaming & Classifying News Articles with Big Data Tools</strong>
-</div>
-
 ## 📘 Contexte du projet
 
 Ce projet a été développé dans le cadre d’un module de **Big Data & Intelligence Artificielle**.
@@ -113,10 +107,17 @@ Format : TSV avec colonnes `text` et `label`
 
 ## 📄 Documentation complémentaire
 
-* 🛠 `train_models.py` : script d'entraînement des modèles
-* 🗃 `evaluation.py` : calcule et stocke les métriques dans Cassandra
-* 📥 `producer.py` : lit le dataset et publie dans Kafka
-* 📤 `consumer.py` : reçoit les données, prédit, stocke
+* **📥 `producer.py`**: Publishes news data from `final_fake_real_news.tsv` into Kafka topic `news`
+
+* **📤 `spark_consumer.py`**:
+
+  * Listens to Kafka topic
+  * Cleans text
+  * Uses pre-trained `Naive Bayes` and `SVM` models to predict
+  * Evaluates predictions
+  * Stores both predictions and evaluation metrics into Cassandra
+
+* **📊 `dashboard.py`**: Reads Cassandra and visualizes metrics/results
 
 ## 👨‍💻 Réalisé par
 
