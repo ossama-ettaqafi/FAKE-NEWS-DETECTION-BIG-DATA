@@ -5,7 +5,6 @@ A real-time pipeline for detecting fake news using Apache Kafka, Spark, Cassandr
 ## 📁 Project Structure
 
 ```
-
 FakeNewsDetectionBigData/
 ├── producer.py                 # Kafka producer: streams dataset to topic
 ├── consumer.py                 # Spark job: consumes, predicts, stores to Cassandra
@@ -20,20 +19,19 @@ FakeNewsDetectionBigData/
 │   └── run_all.bat
 ├── requirements.txt            # Python dependencies
 └── README.md
-
-````
+```
 
 ## ⚙ Technologies Used
 
-| Component          | Tool / Library                      |
-|--------------------|-------------------------------------|
-| Data Streaming     | Apache Kafka                        |
-| Stream Processing  | Apache Spark                        |
-| Machine Learning   | Python, Scikit-learn                |
-| Models             | Naive Bayes, SVM (TF-IDF features)  |
-| Storage            | Apache Cassandra (NoSQL)            |
-| Dashboard          | Flask + HTML                        |
-| Dataset            | TSV format with `text` and `label`  |
+| Component         | Tool / Library                     |
+| ----------------- | ---------------------------------- |
+| Data Streaming    | Apache Kafka                       |
+| Stream Processing | Apache Spark                       |
+| Machine Learning  | Python, Scikit-learn               |
+| Models            | Naive Bayes, SVM (TF-IDF features) |
+| Storage           | Apache Cassandra (NoSQL)           |
+| Dashboard         | Flask + HTML                       |
+| Dataset           | TSV format with `text` and `label` |
 
 ---
 
@@ -45,16 +43,17 @@ From the root of the project, run:
 
 ```bash
 scripts\run_all.bat
-````
+```
 
 This script will:
 
 1. Start Zookeeper
 2. Start Kafka
-3. Create the Kafka topic `news`
-4. Start the Kafka producer
-5. Start the Spark consumer
-6. Launch the Flask dashboard
+3. Start Cassandra
+4. Create the Kafka topic `news`
+5. Start the Kafka producer
+6. Start the Spark consumer
+7. Launch the Flask dashboard
 
 Each step includes delays to ensure services initialize properly.
 
@@ -72,7 +71,31 @@ D:\kafka_2.12-2.5.0\bin\windows\zookeeper-server-start.bat D:\kafka_2.12-2.5.0\c
 D:\kafka_2.12-2.5.0\bin\windows\kafka-server-start.bat D:\kafka_2.12-2.5.0\config\server.properties
 ```
 
-#### 3. Create the Kafka topic
+#### 3. Start Cassandra
+
+To start Cassandra:
+
+1. **Navigate to Cassandra bin directory**:
+
+   ```bash
+   cd C:\apache-cassandra-3.11.10\bin
+   ```
+
+2. **Start Cassandra**:
+
+   ```bash
+   cassandra.bat
+   ```
+
+   Cassandra will start running locally on `localhost:9042`. You should see logs indicating that Cassandra is up and running.
+
+   To access the Cassandra shell, you can open another terminal window and run:
+
+   ```bash
+   cqlsh
+   ```
+
+#### 4. Create the Kafka Topic
 
 ```bash
 D:\kafka_2.12-2.5.0\bin\windows\kafka-topics.bat --create ^
@@ -82,24 +105,26 @@ D:\kafka_2.12-2.5.0\bin\windows\kafka-topics.bat --create ^
   --replication-factor 1
 ```
 
-#### 4. Start the Kafka producer
+#### 5. Start the Kafka Producer
 
 ```bash
 python producer.py
 ```
 
-#### 5. Start the Spark consumer
+#### 6. Start the Spark Consumer
 
 ```bash
 set PYSPARK_PYTHON=python
 spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.4.0,com.datastax.spark:spark-cassandra-connector_2.12:3.4.1 consumer.py
 ```
 
-#### 6. Start the Flask dashboard
+#### 7. Start the Flask Dashboard
 
 ```bash
 python dashboard.py
 ```
+
+---
 
 ## 🧪 Model Training
 
@@ -142,27 +167,24 @@ CREATE TABLE IF NOT EXISTS evaluation_streaming (
 Edit `config/settings.py` to change:
 
 ```python
-# Kafka Configuration
-KAFKA_CONFIG = {
-    'KAFKA_BROKER': 'localhost:9092',
-    'KAFKA_TOPIC': 'news'
-}
+# === Kafka Configuration ===
+KAFKA_BROKER = 'localhost:9092'         # Address of your Kafka broker
+KAFKA_TOPIC = 'news'                    # Kafka topic for streaming data
 
-# File path for data
-DATA_FILE_PATH = 'data/final_fake_real_news.tsv'
+# === File Paths ===
+DATA_FILE_PATH = 'data/final_fake_real_news.tsv'  # Path to your input dataset
 
-# Model file paths
-MODEL_PATHS = {
-    'tfidf': 'models/tfidf_vectorizer.pkl',
-    'naive_bayes': 'models/naive_bayes_model.pkl',
-    'svm': 'models/svm_model.pkl'
-}
+# === Model File Paths ===
+TFIDF_MODEL_PATH = 'models/tfidf_vectorizer.pkl'          # TF-IDF vectorizer
+NAIVE_BAYES_MODEL_PATH = 'models/naive_bayes_model.pkl'   # Naive Bayes classifier
+SVM_MODEL_PATH = 'models/svm_model.pkl'                   # SVM classifier
+MODELS_DIR = 'models'                                     # Directory containing all model files
 
-# Cassandra configuration
-CASSANDRA_CONFIG = {
-    'host': '127.0.0.1',
-    'keyspace': 'fakenews'
-}
+# === Cassandra Configuration ===
+CASSANDRA_HOST = '127.0.0.1'                    # Cassandra running locally
+CASSANDRA_KEYSPACE = 'fakenews'                 # Your Cassandra keyspace
+CASSANDRA_PREDICTIONS_TABLE = 'predictions_streaming'  # Table for model predictions
+CASSANDRA_EVALUATION_TABLE = 'evaluation_streaming'    # Table for evaluation metrics
 ```
 
 ## 📋 Requirements
