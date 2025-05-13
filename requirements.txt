@@ -3,5 +3,9 @@ flask
 kafka-python
 numpy
 scikit-learn
+typing
 pyspark==3.4.0
 cassandra-driver
+tabulate
+nltk
+joblib
