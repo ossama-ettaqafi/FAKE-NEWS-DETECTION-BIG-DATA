@@ -4,7 +4,7 @@ kafka-python
 numpy
 scikit-learn
 typing
-pyspark==3.4.0
+pyspark
 cassandra-driver
 tabulate
 nltk

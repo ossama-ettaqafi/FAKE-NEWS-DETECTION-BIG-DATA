@@ -4,21 +4,31 @@ from flask import Flask, render_template, request
 from cassandra.cluster import Cluster
 import pandas as pd
 import joblib
-from config.settings import CASSANDRA_CONFIG, MODEL_PATHS  # Import config from settings.py
+
+# Import individual settings instead of nonexistent CASSANDRA_CONFIG / MODEL_PATHS
+from config.settings import (
+    CASSANDRA_HOST,
+    CASSANDRA_KEYSPACE,
+    CASSANDRA_PREDICTIONS_TABLE,
+    CASSANDRA_EVALUATION_TABLE,
+    TFIDF_MODEL_PATH,
+    NAIVE_BAYES_MODEL_PATH,
+    SVM_MODEL_PATH
+)
 
 app = Flask(__name__)
 
-# Cassandra connection setup using settings
-cluster = Cluster([CASSANDRA_CONFIG['host']])
-session = cluster.connect(CASSANDRA_CONFIG['keyspace'])
+# Cassandra connection setup
+cluster = Cluster([CASSANDRA_HOST])
+session = cluster.connect(CASSANDRA_KEYSPACE)
 
 @app.route('/', methods=['GET', 'POST'])
 def dashboard():
     # Load data from Cassandra
-    rows = session.execute('SELECT * FROM predictions_streaming')
+    rows = session.execute(f'SELECT * FROM {CASSANDRA_PREDICTIONS_TABLE}')
     df_preds = pd.DataFrame(list(rows))
 
-    rows_eval = session.execute('SELECT * FROM evaluation_streaming')
+    rows_eval = session.execute(f'SELECT * FROM {CASSANDRA_EVALUATION_TABLE}')
     df_eval = pd.DataFrame(list(rows_eval))
 
     total_predictions = len(df_preds)
@@ -71,10 +81,10 @@ def dashboard():
 
             clean_text = preprocess(user_text)
 
-            # Load models from settings.py paths
-            tfidf = joblib.load(MODEL_PATHS['tfidf'])
-            nb_model = joblib.load(MODEL_PATHS['naive_bayes'])
-            svm_model = joblib.load(MODEL_PATHS['svm'])
+            # Load models
+            tfidf = joblib.load(TFIDF_MODEL_PATH)
+            nb_model = joblib.load(NAIVE_BAYES_MODEL_PATH)
+            svm_model = joblib.load(SVM_MODEL_PATH)
 
             vec = tfidf.transform([clean_text])
             if model_choice == "svm":
