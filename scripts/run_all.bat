@@ -2,7 +2,7 @@
 title Fake News Detection - Full Pipeline
 
 :: Set your Python path explicitly
-set PYSPARK_PYTHON=C:\Python\Python311\python.exe
+set PYSPARK_PYTHON=C:/Users/Ossama E/Documents/GitHub/FAKE-NEWS-DETECTION-BIG-DATA/venv/Scripts/python.exe
 
 echo ================================
 echo Starting Zookeeper...
@@ -46,10 +46,10 @@ timeout /t 15 > nul
 echo ================================
 echo Launching Spark Consumer...
 echo ================================
-start cmd /k "set PYSPARK_PYTHON=%PYSPARK_PYTHON% && spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,com.datastax.spark:spark-cassandra-connector_2.12:3.5.0 consumer.py"
+start cmd /k "spark-submit --conf "spark.pyspark.python=%PYSPARK_PYTHON%" --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,com.datastax.spark:spark-cassandra-connector_2.12:3.5.0 consumer.py"
 
 :: Wait for Spark to initialize and connect
-timeout /t 50 > nul
+timeout /t 60 > nul
 
 echo ================================
 echo Starting Flask Dashboard...
