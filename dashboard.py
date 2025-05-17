@@ -1,11 +1,15 @@
 # -*- coding: utf-8 -*-
 
+import os
 from flask import Flask, render_template, request
 from cassandra.cluster import Cluster
 import pandas as pd
 import joblib
+import re
+import string
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
 
-# Import individual settings instead of nonexistent CASSANDRA_CONFIG / MODEL_PATHS
 from config.settings import (
     CASSANDRA_HOST,
     CASSANDRA_KEYSPACE,
@@ -16,15 +20,37 @@ from config.settings import (
     SVM_MODEL_PATH
 )
 
-app = Flask(__name__)
+# Flask app setup: specify templates and static folders inside 'dashboard' folder
+app = Flask(
+    __name__,
+    template_folder=os.path.join('dashboard', 'templates'),
+    static_folder=os.path.join('dashboard', 'static')
+)
 
 # Cassandra connection setup
 cluster = Cluster([CASSANDRA_HOST])
 session = cluster.connect(CASSANDRA_KEYSPACE)
 
+# Load models once at startup
+tfidf = joblib.load(TFIDF_MODEL_PATH)
+nb_model = joblib.load(NAIVE_BAYES_MODEL_PATH)
+svm_model = joblib.load(SVM_MODEL_PATH)
+
+stop_words = set(stopwords.words('english'))
+lemmatizer = WordNetLemmatizer()
+
+def preprocess(text):
+    text = text.lower()
+    text = text.encode('ascii', 'ignore').decode()
+    text = re.sub(r'\d+', '', text)
+    text = text.translate(str.maketrans('', '', string.punctuation))
+    tokens = text.split()
+    tokens = [t for t in tokens if t not in stop_words]
+    tokens = [lemmatizer.lemmatize(t) for t in tokens]
+    return ' '.join(tokens)
+
 @app.route('/', methods=['GET', 'POST'])
 def dashboard():
-    # Load data from Cassandra
     rows = session.execute(f'SELECT * FROM {CASSANDRA_PREDICTIONS_TABLE}')
     df_preds = pd.DataFrame(list(rows))
 
@@ -32,12 +58,11 @@ def dashboard():
     df_eval = pd.DataFrame(list(rows_eval))
 
     total_predictions = len(df_preds)
-    correct_predictions = (df_preds['label'] == df_preds['prediction']).sum()
+    correct_predictions = (df_preds['label'] == df_preds['prediction']).sum() if total_predictions > 0 else 0
     global_accuracy = round((correct_predictions / total_predictions) * 100, 2) if total_predictions > 0 else 0
-    real_count = (df_preds['label'] == 0).sum()
-    fake_count = (df_preds['label'] == 1).sum()
+    real_count = (df_preds['label'] == 0).sum() if total_predictions > 0 else 0
+    fake_count = (df_preds['label'] == 1).sum() if total_predictions > 0 else 0
 
-    # Stats by model
     model_stats = []
     if not df_preds.empty:
         for model in df_preds['model'].unique():
@@ -52,41 +77,18 @@ def dashboard():
                 'accuracy': acc
             })
 
-    # Prediction form
     new_prediction = None
     user_text = ""
     model_used = ""
 
     if request.method == 'POST':
-        user_text = request.form.get('news_text')
-        model_choice = request.form.get('model_choice')
+        user_text = request.form.get('news_text', '').strip()
+        model_choice = request.form.get('model_choice', 'naive_bayes')
 
         if user_text:
-            # Preprocessing
-            import re, string
-            from nltk.corpus import stopwords
-            from nltk.stem import WordNetLemmatizer
-            stop_words = set(stopwords.words('english'))
-            lemmatizer = WordNetLemmatizer()
-
-            def preprocess(text):
-                text = text.lower()
-                text = text.encode('ascii', 'ignore').decode()
-                text = re.sub(r'\d+', '', text)
-                text = text.translate(str.maketrans('', '', string.punctuation))
-                tokens = text.split()
-                tokens = [t for t in tokens if t not in stop_words]
-                tokens = [lemmatizer.lemmatize(t) for t in tokens]
-                return ' '.join(tokens)
-
             clean_text = preprocess(user_text)
-
-            # Load models
-            tfidf = joblib.load(TFIDF_MODEL_PATH)
-            nb_model = joblib.load(NAIVE_BAYES_MODEL_PATH)
-            svm_model = joblib.load(SVM_MODEL_PATH)
-
             vec = tfidf.transform([clean_text])
+
             if model_choice == "svm":
                 prediction = svm_model.predict(vec)[0]
                 model_used = "SVM"
