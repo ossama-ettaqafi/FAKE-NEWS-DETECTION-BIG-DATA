@@ -14,7 +14,7 @@ FakeNewsDetectionBigData/
 ├── config/                     # Contains settings.py (Kafka config, paths)
 ├── templates/                  # HTML template for dashboard
 ├── notebooks/                  # Jupyter notebook for training
-│   └── FakeNewsDetection_ML.ipynb
+│   └── fake_news_detection_pre.ipynb
 ├── scripts/                    # Batch launcher
 │   └── run_all.bat
 ├── requirements.txt            # Python dependencies
