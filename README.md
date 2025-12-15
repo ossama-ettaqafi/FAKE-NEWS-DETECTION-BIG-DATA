@@ -200,6 +200,10 @@ pip install -r requirements.txt
 * Kafka 2.5.0, Spark 3.4.x, Cassandra 3.11.x recommended
 * Cassandra `cqlsh` may require Python 2.7
 * Kafka/Zookeeper logs and metadata may live under `C:\tmp\` unless redirected
+  
+## 👤 Contributor
+
+Lamya Ouahmidi, Nouhaila Enihe, **Ossama Ettaqafi**  
 
 ## 📄 License
 
